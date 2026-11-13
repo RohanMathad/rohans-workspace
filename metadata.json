@@ -1,0 +1,6 @@
+{
+  "name": "LifeOS — Personal Finance & Basket Tracker",
+  "description": "Modern personal finance intelligence and shopping basket tracker with instant ledger conversion, real-time analytics, and clean pastel aesthetics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
