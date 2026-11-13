@@ -24,8 +24,13 @@ const PRESET_COLORS = [
 const PRESET_EMOJIS = ['🍔', '🛒', '⚡', '✈️', '🛍️', '💡', '🧴', '🎬', '☕', '📚', '🏋️', '🏥', '🚗', '🎮', '💼', '💰', '📈'];
 
 export const FinanceCategoriesPage: React.FC = () => {
-  const { categories, addNewCategory, updateCategory, archiveCategory, restoreCategory } =
-    useAppData();
+  const {
+    categories,
+    addNewCategory,
+    updateCategory,
+    archiveCategory,
+    restoreCategory,
+  } = useAppData();
 
   const [isCreating, setIsCreating] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -100,20 +105,15 @@ export const FinanceCategoriesPage: React.FC = () => {
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-200">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-            Category Manager
-          </h1>
-          <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Organize your custom expense and income buckets with icons and color swatches.
-          </p>
-        </div>
+      <div className="flex items-center justify-between gap-3 mb-6 pt-2">
+        <h1 className="text-2xl md:text-[28px] font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
+          Category Manager
+        </h1>
 
         <button
           type="button"
           onClick={() => (isCreating ? closeForm() : openCreateForm())}
-          className="px-5 py-2.5 rounded-full bg-slate-950 dark:bg-white text-white dark:text-slate-950 text-xs md:text-sm font-bold flex items-center gap-2 hover:bg-slate-800 dark:hover:bg-slate-200 transition-all self-start sm:self-auto shadow-sm cursor-pointer"
+          className="px-4 sm:px-5 py-2.5 rounded-full bg-slate-950 dark:bg-white text-white dark:text-slate-950 text-xs md:text-sm font-bold flex items-center gap-2 hover:bg-slate-800 dark:hover:bg-slate-200 transition-all shadow-sm cursor-pointer shrink-0"
         >
           <Plus className="w-4 h-4 stroke-[2.5]" />
           <span>{isCreating ? 'Cancel' : 'Add New Category'}</span>

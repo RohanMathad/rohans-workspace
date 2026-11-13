@@ -96,17 +96,19 @@ export const FinanceReportsPage: React.FC = () => {
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-200">
       {/* Minimalist Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+      <div className="flex items-center justify-between gap-3 mb-6 pt-2">
+        <h1 className="text-2xl md:text-[28px] font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
           Financial Reports & Analytics
         </h1>
 
-        <MonthSelector
-          selectedMonth={selectedMonth}
-          availableMonths={availableMonths}
-          onSelect={setSelectedMonth}
-          variant="large"
-        />
+        <div className="shrink-0">
+          <MonthSelector
+            selectedMonth={selectedMonth}
+            availableMonths={availableMonths}
+            onSelect={setSelectedMonth}
+            variant="large"
+          />
+        </div>
       </div>
 
       {/* Top KPI Row: 3 Equal Cards Strictly Locked to Selected Month */}

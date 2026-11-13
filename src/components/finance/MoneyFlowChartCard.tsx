@@ -21,7 +21,7 @@ export const MoneyFlowChartCard: React.FC = () => {
   const isDark = theme === 'dark';
 
   const data = overviewData?.flowTrend || [];
-  const savingsRate = overviewData?.savingsRate ?? 55.6;
+  const savingsRate = overviewData?.savingsRate ?? 0;
   const totalSavings = overviewData?.totalSavings ?? 0;
   const monthlyTarget = profile?.monthlySavingsTarget ?? overviewData?.profile?.monthlySavingsTarget ?? 0;
   const effectiveTarget = overviewScope === 'Yearly' ? monthlyTarget * 12 : monthlyTarget;
@@ -110,8 +110,13 @@ export const MoneyFlowChartCard: React.FC = () => {
             <YAxis
               axisLine={false}
               tickLine={false}
+              allowDecimals={false}
               tick={{ fill: axisTickColor, fontSize: 11 }}
-              tickFormatter={(val) => `₹${val / 1000}k`}
+              tickFormatter={(val) =>
+                val >= 1000
+                  ? `₹${Number((val / 1000).toFixed(1))}k`
+                  : `₹${val}`
+              }
             />
             <Tooltip content={<CustomTooltip />} />
             <Area
@@ -148,8 +153,13 @@ export const MoneyFlowChartCard: React.FC = () => {
               <YAxis
                 axisLine={false}
                 tickLine={false}
+                allowDecimals={false}
                 tick={{ fill: axisTickColor, fontSize: 10 }}
-                tickFormatter={(val) => `₹${val > 1000 ? `${(val / 1000).toFixed(0)}k` : val}`}
+                tickFormatter={(val) =>
+                  val >= 1000
+                    ? `₹${Number((val / 1000).toFixed(0))}k`
+                    : `₹${val}`
+                }
               />
               <Tooltip content={<CustomTooltip />} />
               <Bar

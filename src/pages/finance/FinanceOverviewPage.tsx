@@ -151,10 +151,10 @@ export const FinanceOverviewPage: React.FC = () => {
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-200">
       {/* KPI Cards: Financial Record Header + Monthly / Yearly Toggle */}
       <section aria-label="Financial Summary Cards">
-        <div className="flex items-center justify-between pb-3.5">
-          <h2 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+        <div className="flex items-center justify-between gap-3 mb-6 pt-2">
+          <h1 className="text-2xl md:text-[28px] font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
             Financial Record
-          </h2>
+          </h1>
 
           {/* Monthly | Yearly 2-option Pill Toggle */}
           <div

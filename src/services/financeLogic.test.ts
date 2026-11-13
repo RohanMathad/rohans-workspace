@@ -20,7 +20,7 @@ import {
   buildCategoryBreakdownFromTotals,
   getUserInitials,
 } from './financeLogic';
-import { financeDataService } from './financeDataService';
+import { buildWorkspaceId, financeDataService } from './financeDataService';
 import { Category, LedgerEntry, UserSetupProfile } from '../types/finance.types';
 
 const mockProfile: UserSetupProfile = {
@@ -99,12 +99,32 @@ const mockEntries: LedgerEntry[] = [
   },
 ];
 
-test('calculateFinancialTotals computes income, expense, and savings correctly', () => {
-  const totals = calculateFinancialTotals(mockProfile, mockEntries);
-  assert.equal(totals.totalIncome, 85992);
+test('calculateFinancialTotals computes income, expense, and savings strictly from settled transactions', () => {
+  const emptyTotals = calculateFinancialTotals(mockProfile, []);
+  assert.equal(emptyTotals.totalIncome, 0);
+  assert.equal(emptyTotals.totalExpense, 0);
+  assert.equal(emptyTotals.totalSavings, 0);
+
+  const incomeAndExpenseEntries: LedgerEntry[] = [
+    ...mockEntries,
+    {
+      id: 'inc-1',
+      title: 'Monthly Salary',
+      categoryId: 'cat-salary',
+      amount: 10000,
+      status: 'SETTLED',
+      type: 'INCOME',
+      date: todayStr,
+      dayKey: todayStr,
+      monthKey: todayStr.slice(0, 7),
+      dateTimestamp: new Date(todayStr).getTime(),
+    },
+  ];
+  const totals = calculateFinancialTotals(mockProfile, incomeAndExpenseEntries);
+  assert.equal(totals.totalIncome, 10000);
   assert.equal(totals.totalExpense, 2000);
-  assert.equal(totals.totalSavings, 83992);
-  assert.ok(totals.savingsRate > 90);
+  assert.equal(totals.totalSavings, 8000);
+  assert.equal(totals.savingsRate, 80);
 });
 
 test('calculateCategoryBreakdown computes percentages and excludes planned basket items', () => {
@@ -183,11 +203,26 @@ test('formatCompactINR formats values compactly for target pills', () => {
   assert.equal(formatCompactINR(0), '₹0');
 });
 
-test('calculateYearlyFinancialTotals scales monthlyBaseIncome by 12 and sums settled year entries', () => {
-  const yearly = calculateYearlyFinancialTotals(mockProfile, mockEntries);
-  assert.equal(yearly.totalIncome, 85992 * 12);
+test('calculateYearlyFinancialTotals sums settled INCOME and EXPENSE year entries without base income scaling', () => {
+  const yearEntriesWithIncome: LedgerEntry[] = [
+    ...mockEntries,
+    {
+      id: 'inc-y1',
+      title: 'Bonus',
+      categoryId: 'cat-salary',
+      amount: 50000,
+      status: 'SETTLED',
+      type: 'INCOME',
+      date: todayStr,
+      dayKey: todayStr,
+      monthKey: todayStr.slice(0, 7),
+      dateTimestamp: new Date(todayStr).getTime(),
+    },
+  ];
+  const yearly = calculateYearlyFinancialTotals(mockProfile, yearEntriesWithIncome);
+  assert.equal(yearly.totalIncome, 50000);
   assert.equal(yearly.totalExpense, 2000);
-  assert.equal(yearly.totalSavings, 85992 * 12 - 2000);
+  assert.equal(yearly.totalSavings, 48000);
 });
 
 test('filterMonthEntriesByScopedTimeframe scopes Daily and Weekly to selectedMonth', () => {
@@ -244,16 +279,31 @@ test('filterMonthEntriesByScopedTimeframe scopes Daily and Weekly to selectedMon
 test('buildMonthlySummary, buildYearlySummary, and buildCategoryBreakdownFromTotals aggregate correctly', () => {
   const monthKey = todayStr.slice(0, 7);
   const yearKey = monthKey.slice(0, 4);
-  const { monthlySummaries, yearlySummaries } = buildAllSummaryTables(mockProfile, mockEntries);
+  const entriesWithIncome: LedgerEntry[] = [
+    ...mockEntries,
+    {
+      id: 'inc-m1',
+      title: 'Stipend',
+      categoryId: 'cat-salary',
+      amount: 25000,
+      status: 'SETTLED',
+      type: 'INCOME',
+      date: todayStr,
+      dayKey: todayStr,
+      monthKey,
+      dateTimestamp: new Date(todayStr).getTime(),
+    },
+  ];
+  const { monthlySummaries, yearlySummaries } = buildAllSummaryTables(mockProfile, entriesWithIncome);
 
   const mSum = monthlySummaries[monthKey];
   assert.ok(mSum);
   assert.equal(mSum.monthKey, monthKey);
   assert.equal(mSum.yearKey, yearKey);
   assert.equal(mSum.totalExpense, 2000);
-  assert.equal(mSum.totalIncome, 85992);
-  assert.equal(mSum.totalSavings, 83992);
-  assert.equal(mSum.transactionCount, 2); // excludes BASKET_PLANNED
+  assert.equal(mSum.totalIncome, 25000);
+  assert.equal(mSum.totalSavings, 23000);
+  assert.equal(mSum.transactionCount, 3); // excludes BASKET_PLANNED
   assert.equal(mSum.categoryTotals['c1'], 500);
   assert.equal(mSum.categoryTotals['c2'], 1500);
 
@@ -264,13 +314,13 @@ test('buildMonthlySummary, buildYearlySummary, and buildCategoryBreakdownFromTot
 
   const ySum = yearlySummaries[yearKey];
   assert.ok(ySum);
-  assert.equal(ySum.totalIncome, 85992 * 12);
+  assert.equal(ySum.totalIncome, 25000);
   assert.equal(ySum.totalExpense, 2000);
-  assert.equal(ySum.totalSavings, 85992 * 12 - 2000);
+  assert.equal(ySum.totalSavings, 23000);
   assert.equal(ySum.monthlyBreakdown[monthKey].expense, 2000);
 
   // Verify standalone buildMonthlySummary & buildYearlySummary match
-  const manualMonth = buildMonthlySummary(monthKey, mockProfile, mockEntries);
+  const manualMonth = buildMonthlySummary(monthKey, mockProfile, entriesWithIncome);
   assert.equal(manualMonth.totalExpense, mSum.totalExpense);
   const manualYear = buildYearlySummary(yearKey, mockProfile, { [monthKey]: manualMonth });
   assert.equal(manualYear.totalExpense, ySum.totalExpense);
@@ -319,14 +369,36 @@ test('financeDataService auto-syncs MonthlySummary and YearlySummary on add, edi
   assert.equal(afterDeleteOct.totalExpense, initialOct.totalExpense);
   assert.equal(afterDeleteYear.totalExpense, initialYear.totalExpense);
 
-  // 4. Settle basket item -> updates curMonth & curYear
+  // 4. Add & settle basket item -> updates curMonth & curYear
+  await financeDataService.addBasketItem('Planned Monitor Stand', 'cat-electronics', 500);
   const basketItems = await financeDataService.getBasketPlannedEntries();
-  assert.ok(basketItems.length > 0);
+  assert.equal(basketItems.length, 1);
   await financeDataService.settleBasketItem(basketItems[0].id, 250, 'UPI / GPay', getLocalDateStr());
   const afterSettleMonth = await financeDataService.getMonthlySummary(curMonth);
   assert.equal(afterSettleMonth.totalExpense, initialMonth.totalExpense + 250);
 
+  // 5. Add INCOME entry -> updates totalIncome & totalSavings in curMonth & curYear
+  await financeDataService.addExpense({
+    title: 'Monthly Salary',
+    categoryId: 'cat-salary',
+    amount: 5000,
+    type: 'INCOME',
+    date: getLocalDateStr(),
+  });
+  const afterIncomeMonth = await financeDataService.getMonthlySummary(curMonth);
+  assert.equal(afterIncomeMonth.totalIncome, 5000);
+  assert.equal(afterIncomeMonth.totalSavings, 5000 - (initialMonth.totalExpense + 250));
+
+  // 6. Reset wipes ledger & summaries back to 0 while keeping categories & profile intact
   await financeDataService.resetAllData();
+  const afterResetEntries = await financeDataService.getLedgerEntries();
+  const afterResetCategories = await financeDataService.getCategories(true);
+  const afterResetMonth = await financeDataService.getMonthlySummary(curMonth);
+  assert.equal(afterResetEntries.length, 0);
+  assert.ok(afterResetCategories.some((c) => c.type === 'INCOME'));
+  assert.equal(afterResetMonth.totalIncome, 0);
+  assert.equal(afterResetMonth.totalExpense, 0);
+  assert.equal(afterResetMonth.totalSavings, 0);
 });
 
 test('getUserInitials derives 1-2 uppercase initials from user name', () => {
@@ -337,5 +409,50 @@ test('getUserInitials derives 1-2 uppercase initials from user name', () => {
   assert.equal(getUserInitials(undefined), 'R');
 });
 
+test('financeDataService completeSetup persists owner, currency, savings target, and keeps base income at 0', async () => {
+  await financeDataService.resetToSetupDemo();
+  const demoProfile = await financeDataService.getUserProfile();
+  assert.equal(demoProfile.isSetupComplete, false);
 
+  const completed = await financeDataService.completeSetup({
+    userName: 'Rohan Mathad',
+    currencySymbol: '₹',
+    monthlyBaseIncome: 0,
+    monthlySavingsTarget: 40000,
+  });
+
+  assert.equal(completed.isSetupComplete, true);
+  assert.equal(completed.userName, 'Rohan Mathad');
+  assert.equal(completed.currencySymbol, '₹');
+  assert.equal(completed.monthlyBaseIncome, 0);
+  assert.equal(completed.monthlySavingsTarget, 40000);
+});
+
+test('multi-user workspace ID normalization, login, and logout isolate sessions cleanly', async () => {
+  assert.equal(buildWorkspaceId('Rohan', '1234'), 'rohan_1234');
+  assert.equal(buildWorkspaceId('  Rohan Mathad! ', '0042'), 'rohanmathad_0042');
+
+  const p1 = await financeDataService.loginOrCreateWorkspace('Rohan', '1234', 35000);
+  assert.equal(financeDataService.getActiveWorkspaceId(), 'rohan_1234');
+  assert.equal(p1.userName, 'Rohan');
+  assert.equal(p1.monthlySavingsTarget, 35000);
+  assert.equal(p1.monthlyBaseIncome, 0);
+  assert.equal(p1.isSetupComplete, true);
+
+  await financeDataService.addExpense({
+    title: 'Rohan Lunch',
+    categoryId: 'cat-food',
+    amount: 450,
+    date: getLocalDateStr(),
+  });
+  const rohanEntries = await financeDataService.getLedgerEntries();
+  assert.equal(rohanEntries.length, 1);
+
+  await financeDataService.logoutWorkspace();
+  assert.equal(financeDataService.getActiveWorkspaceId(), null);
+  const loggedOutProfile = await financeDataService.getUserProfile();
+  assert.equal(loggedOutProfile.isSetupComplete, false);
+  const clearedEntries = await financeDataService.getLedgerEntries();
+  assert.equal(clearedEntries.length, 0);
+});
 

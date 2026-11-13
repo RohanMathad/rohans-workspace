@@ -109,7 +109,7 @@ export function calculateCategoryBreakdown(
  * Calculates total income, total expense, savings and savings rate
  */
 export function calculateFinancialTotals(
-  profile: UserSetupProfile,
+  _profile: UserSetupProfile,
   entries: LedgerEntry[]
 ) {
   const settled = entries.filter((e) => e.status === 'SETTLED');
@@ -118,11 +118,10 @@ export function calculateFinancialTotals(
     .filter((e) => e.type === 'EXPENSE' && typeof e.amount === 'number')
     .reduce((sum, e) => sum + (e.amount || 0), 0);
 
-  const additionalIncome = settled
+  const totalIncome = settled
     .filter((e) => e.type === 'INCOME' && typeof e.amount === 'number')
     .reduce((sum, e) => sum + (e.amount || 0), 0);
 
-  const totalIncome = profile.monthlyBaseIncome + additionalIncome;
   const totalSavings = Math.max(0, totalIncome - totalExpense);
   const savingsRate = totalIncome > 0 ? Number(((totalSavings / totalIncome) * 100).toFixed(1)) : 0;
 
@@ -295,10 +294,10 @@ export function formatCompactINR(val: number | null | undefined): string {
 }
 
 /**
- * Calculates yearly income, expense, savings, and savings rate (scales monthly base income × 12)
+ * Calculates yearly income, expense, savings, and savings rate strictly from settled ledger entries
  */
 export function calculateYearlyFinancialTotals(
-  profile: UserSetupProfile,
+  _profile: UserSetupProfile,
   yearEntries: LedgerEntry[]
 ) {
   const settled = yearEntries.filter((e) => e.status === 'SETTLED');
@@ -307,11 +306,10 @@ export function calculateYearlyFinancialTotals(
     .filter((e) => e.type === 'EXPENSE' && typeof e.amount === 'number')
     .reduce((sum, e) => sum + (e.amount || 0), 0);
 
-  const additionalIncome = settled
+  const totalIncome = settled
     .filter((e) => e.type === 'INCOME' && typeof e.amount === 'number')
     .reduce((sum, e) => sum + (e.amount || 0), 0);
 
-  const totalIncome = profile.monthlyBaseIncome * 12 + additionalIncome;
   const totalSavings = Math.max(0, totalIncome - totalExpense);
   const savingsRate = totalIncome > 0 ? Number(((totalSavings / totalIncome) * 100).toFixed(1)) : 0;
 
@@ -452,8 +450,8 @@ export function buildYearlySummary(
     .sort((a, b) => a.monthKey.localeCompare(b.monthKey));
 
   const monthlyBreakdown: Record<string, { income: number; expense: number; savings: number }> = {};
+  let totalIncome = 0;
   let totalExpense = 0;
-  let additionalIncome = 0;
 
   for (const m of yearMonths) {
     monthlyBreakdown[m.monthKey] = {
@@ -461,11 +459,10 @@ export function buildYearlySummary(
       expense: m.totalExpense,
       savings: m.totalSavings,
     };
+    totalIncome += m.totalIncome;
     totalExpense += m.totalExpense;
-    additionalIncome += m.totalIncome - profile.monthlyBaseIncome;
   }
 
-  const totalIncome = profile.monthlyBaseIncome * 12 + additionalIncome;
   const totalSavings = Math.max(0, totalIncome - totalExpense);
   const yearlySavingsTarget = (profile.monthlySavingsTarget ?? 0) * 12;
 

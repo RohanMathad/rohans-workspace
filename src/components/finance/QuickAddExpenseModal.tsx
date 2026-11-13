@@ -23,6 +23,10 @@ export const QuickAddExpenseModal: React.FC = () => {
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const typeMatchingCategories = activeCategories.filter((c) => c.type === type);
+  const displayedCategories =
+    typeMatchingCategories.length > 0 ? typeMatchingCategories : activeCategories;
+
   // Sync form state when modal opens for Add vs Edit
   useEffect(() => {
     if (editingTransaction) {
@@ -46,18 +50,20 @@ export const QuickAddExpenseModal: React.FC = () => {
       setType('EXPENSE');
       setPaymentMethod('UPI / GPay');
       setDate(new Date().toISOString().split('T')[0]);
-      if (activeCategories.length > 0 && !categoryId) {
-        setCategoryId(activeCategories[0].id);
+      const defaultExpenseCats = activeCategories.filter((c) => c.type === 'EXPENSE');
+      const initialList = defaultExpenseCats.length > 0 ? defaultExpenseCats : activeCategories;
+      if (initialList.length > 0) {
+        setCategoryId(initialList[0].id);
       }
     }
   }, [editingTransaction, isQuickAddOpen]);
 
-  // Ensure default category is set when categories load
+  // Keep selected category aligned with Expense/Income toggle or newly loaded categories
   useEffect(() => {
-    if (activeCategories.length > 0 && !categoryId) {
-      setCategoryId(activeCategories[0].id);
+    if (displayedCategories.length > 0 && !displayedCategories.some((c) => c.id === categoryId)) {
+      setCategoryId(displayedCategories[0].id);
     }
-  }, [activeCategories, categoryId]);
+  }, [displayedCategories, categoryId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -179,7 +185,11 @@ export const QuickAddExpenseModal: React.FC = () => {
             required
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. Blue Tokai Coffee, Uber Ride..."
+            placeholder={
+              type === 'INCOME'
+                ? 'e.g. Monthly Salary, Freelance Payout...'
+                : 'e.g. Blue Tokai Coffee, Uber Ride...'
+            }
             className="w-full px-4 py-3 rounded-2xl bg-slate-50/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 placeholder:text-slate-400"
           />
         </div>
@@ -207,7 +217,7 @@ export const QuickAddExpenseModal: React.FC = () => {
             Category
           </label>
           <div className="grid grid-cols-2 gap-2 max-h-36 overflow-y-auto pr-1">
-            {activeCategories.map((cat) => (
+            {displayedCategories.map((cat) => (
               <button
                 key={cat.id}
                 type="button"

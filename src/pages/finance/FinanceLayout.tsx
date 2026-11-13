@@ -9,10 +9,15 @@ import {
   Heart,
   CheckCircle2,
   Settings,
+  LayoutGrid,
+  FileText,
+  ShoppingBag,
+  PieChart,
+  LogOut,
 } from 'lucide-react';
 import { LeftModuleSidebar } from '../../components/common/LeftModuleSidebar';
 import { TopCapsuleNav } from '../../components/common/TopCapsuleNav';
-import { MobileBottomNav } from '../../components/common/MobileBottomNav';
+import { MobileBottomNav, MobileBottomNavItem } from '../../components/common/MobileBottomNav';
 import { FloatingActionButton } from '../../components/common/FloatingActionButton';
 import { QuickAddExpenseModal } from '../../components/finance/QuickAddExpenseModal';
 import { SettleBasketModal } from '../../components/finance/SettleBasketModal';
@@ -22,9 +27,16 @@ import { FinanceBasketPage } from './FinanceBasketPage';
 import { FinanceReportsPage } from './FinanceReportsPage';
 import { FinanceCategoriesPage } from './FinanceCategoriesPage';
 import { ComingSoonModulePage } from '../placeholders/ComingSoonModulePage';
-import { useAppData } from '../../context/AppDataContext';
+import { FinanceTab, useAppData } from '../../context/AppDataContext';
 import { useTheme } from '../../context/ThemeContext';
 import { getUserInitials } from '../../services/financeLogic';
+
+const FINANCE_MOBILE_NAV_ITEMS: MobileBottomNavItem[] = [
+  { id: 'overview', label: 'Overview', icon: LayoutGrid },
+  { id: 'activity', label: 'Activity', icon: FileText },
+  { id: 'basket', label: 'Basket', icon: ShoppingBag },
+  { id: 'reports', label: 'Reports', icon: PieChart },
+];
 
 export const FinanceLayout: React.FC = () => {
   const {
@@ -33,10 +45,12 @@ export const FinanceLayout: React.FC = () => {
     setActiveTab,
     activeModule,
     setActiveModule,
+    openQuickAdd,
     settleBasketItemTarget,
     closeSettleModal,
     settleItem,
     resetToSetupDemo,
+    logout,
   } = useAppData();
 
   const { theme, toggleTheme } = useTheme();
@@ -44,6 +58,8 @@ export const FinanceLayout: React.FC = () => {
 
   const userName = profile?.userName || 'Rohan';
   const initials = getUserInitials(userName);
+  const showMobileBottomNav =
+    (activeModule === 'finance' || activeModule === 'basket') && activeTab !== 'categories';
 
   const renderActiveContent = () => {
     if (activeModule === 'health') {
@@ -115,7 +131,11 @@ export const FinanceLayout: React.FC = () => {
       <LeftModuleSidebar />
 
       {/* Main Container Area */}
-      <div className="lg:pl-28 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 pb-28 lg:pb-12">
+      <div
+        className={`lg:pl-28 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 lg:pb-12 ${
+          showMobileBottomNav ? 'pb-28' : 'pb-10'
+        }`}
+      >
         {/* ================= DESKTOP TOP HEADER (>= 1024px) ================= */}
         <header className="hidden lg:block sticky top-5 z-30 mb-6">
           <TopCapsuleNav />
@@ -142,10 +162,17 @@ export const FinanceLayout: React.FC = () => {
       </div>
 
       {/* Desktop Floating Action Button (+) */}
-      <FloatingActionButton />
+      {activeTab !== 'categories' && <FloatingActionButton />}
 
-      {/* Mobile Fixed Bottom Nav Capsule */}
-      <MobileBottomNav />
+      {/* Mobile Fixed Bottom Nav Capsule (Hidden on Categories page) */}
+      {showMobileBottomNav && (
+        <MobileBottomNav
+          navItems={FINANCE_MOBILE_NAV_ITEMS}
+          activeItemId={activeTab}
+          onSelect={(id) => setActiveTab(id as FinanceTab)}
+          onPrimaryActionClick={openQuickAdd}
+        />
+      )}
 
       {/* Quick Add Expense Modal */}
       <QuickAddExpenseModal />
@@ -267,7 +294,7 @@ export const FinanceLayout: React.FC = () => {
             </div>
           </div>
 
-          {/* Bottom Drawer Controls: Dark Mode & Demo Reset */}
+          {/* Bottom Drawer Controls: Dark Mode, Setup & Log Out */}
           <div className="pt-4 border-t border-slate-100 dark:border-white/10 space-y-2">
             <button
               type="button"
@@ -291,10 +318,22 @@ export const FinanceLayout: React.FC = () => {
                 setIsMobileDrawerOpen(false);
                 await resetToSetupDemo();
               }}
-              className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-2xl border border-indigo-200 dark:border-indigo-800/80 text-indigo-600 dark:text-indigo-400 text-xs font-bold hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
+              className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-2xl border border-indigo-200 dark:border-indigo-800/80 text-indigo-600 dark:text-indigo-400 text-xs font-bold hover:bg-indigo-50 dark:hover:bg-indigo-950/30 cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span>Re-run Setup Wizard</span>
+              <span>Edit Workspace Profile</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={async () => {
+                setIsMobileDrawerOpen(false);
+                await logout();
+              }}
+              className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-2xl border border-rose-200 dark:border-rose-500/30 bg-rose-50/70 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 text-xs font-bold hover:bg-rose-100/80 dark:hover:bg-rose-950/50 transition-colors cursor-pointer"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Log Out</span>
             </button>
           </div>
         </div>

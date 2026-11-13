@@ -71,12 +71,12 @@ export const FinanceBasketPage: React.FC = () => {
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* Minimalist Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+      <div className="flex items-center justify-between gap-3 mb-6 pt-2">
+        <h1 className="text-2xl md:text-[28px] font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
           Shopping Basket & To-Buy List
         </h1>
 
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40 text-xs font-bold tabular-nums">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40 text-xs font-bold tabular-nums shrink-0">
           <span className="w-2 h-2 rounded-full bg-emerald-500" />
           <span>Basket Items: {plannedItems.length}</span>
         </div>

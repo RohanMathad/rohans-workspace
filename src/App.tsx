@@ -10,7 +10,7 @@ import { FinanceLayout } from './pages/finance/FinanceLayout';
 import { InitialSetupPage } from './pages/setup/InitialSetupPage';
 
 const AppContent: React.FC = () => {
-  const { profile, isLoading } = useAppData();
+  const { profile, isLoading, activeWorkspaceId } = useAppData();
 
   if (isLoading) {
     return (
@@ -23,8 +23,8 @@ const AppContent: React.FC = () => {
     );
   }
 
-  // Automatic Route Guard: if isSetupComplete === false, show InitialSetupPage
-  if (profile && !profile.isSetupComplete) {
+  // Automatic Route Guard: if no active workspace session or setup incomplete, show InitialSetupPage
+  if (!activeWorkspaceId || !profile || !profile.isSetupComplete) {
     return <InitialSetupPage />;
   }
 

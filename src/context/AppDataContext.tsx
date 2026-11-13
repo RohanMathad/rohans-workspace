@@ -116,10 +116,20 @@ interface AppDataContextType {
   restoreCategory: (id: string) => Promise<void>;
   completeSetup: (data: {
     userName: string;
-    monthlyBaseIncome: number;
+    currencySymbol?: string;
+    monthlyBaseIncome?: number;
+    monthlySavingsTarget?: number;
     monthlyBudgetCap?: number;
     categories?: Category[];
   }) => Promise<void>;
+  loginOrCreateWorkspace: (
+    userName: string,
+    pin: string,
+    monthlySavingsTarget?: number,
+    options?: { currencySymbol?: string; categories?: Category[] }
+  ) => Promise<void>;
+  logout: () => Promise<void>;
+  activeWorkspaceId: string | null;
   updateSavingsTarget: (target: number) => Promise<void>;
   resetToSetupDemo: () => Promise<void>;
   resetAllData: () => Promise<void>;
@@ -172,9 +182,30 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return categories.filter((c) => !c.isArchived);
   }, [categories]);
 
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(() =>
+    financeDataService.getActiveWorkspaceId()
+  );
+
   // Architectural Safeguard 3 & 4: Dual-Month Window Fetching & O(1) Summary Reads
   const refreshData = useCallback(async () => {
     try {
+      const currentWorkspaceId = financeDataService.getActiveWorkspaceId();
+      setActiveWorkspaceId(currentWorkspaceId);
+
+      if (!currentWorkspaceId) {
+        const uProfile = await financeDataService.getUserProfile();
+        setProfile(uProfile);
+        setCategories([]);
+        setLedgerEntries([]);
+        setOverviewData(null);
+        setSelectedMonthSummary(null);
+        setCurrentYearSummary(null);
+        setIncomeDeltaMoM(0);
+        setExpenseDeltaMoM(0);
+        setSavingsDeltaMoM(0);
+        return;
+      }
+
       const prevMonth = getPreviousMonthKey(selectedMonth);
       const selectedYear = selectedMonth.slice(0, 4);
 
@@ -254,7 +285,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (module === 'basket') {
       setActiveTabState('basket');
     } else if (module === 'finance') {
-      if (activeTab === 'basket') {
+      if (activeTab === 'basket' || activeTab === 'categories') {
         setActiveTabState('overview');
       }
     }
@@ -383,13 +414,36 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const completeSetup = async (data: {
     userName: string;
-    monthlyBaseIncome: number;
+    currencySymbol?: string;
+    monthlyBaseIncome?: number;
+    monthlySavingsTarget?: number;
     monthlyBudgetCap?: number;
     categories?: Category[];
   }) => {
     await financeDataService.completeSetup(data);
     await refreshData();
     setActiveTabState('overview');
+  };
+
+  const loginOrCreateWorkspace = async (
+    userName: string,
+    pin: string,
+    monthlySavingsTarget?: number,
+    options?: { currencySymbol?: string; categories?: Category[] }
+  ) => {
+    await financeDataService.loginOrCreateWorkspace(userName, pin, monthlySavingsTarget, options);
+    await refreshData();
+    setActiveModuleState('finance');
+    setActiveTabState('overview');
+  };
+
+  const logout = async () => {
+    await financeDataService.logoutWorkspace();
+    setIsMobileDrawerOpen(false);
+    setSelectedCategoryFilter('all');
+    setActiveModuleState('finance');
+    setActiveTabState('overview');
+    await refreshData();
   };
 
   const updateSavingsTarget = async (target: number) => {
@@ -461,6 +515,9 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
         archiveCategory,
         restoreCategory,
         completeSetup,
+        loginOrCreateWorkspace,
+        logout,
+        activeWorkspaceId,
         updateSavingsTarget,
         resetToSetupDemo,
         resetAllData,

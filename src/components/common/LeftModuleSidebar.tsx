@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Sun,
   Moon,
@@ -8,6 +8,8 @@ import {
   Settings,
   ChevronsRight,
   ChevronsLeft,
+  RotateCcw,
+  LogOut,
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { LifeOsModule, useAppData } from '../../context/AppDataContext';
@@ -15,11 +17,36 @@ import { getUserInitials } from '../../services/financeLogic';
 
 export const LeftModuleSidebar: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
-  const { activeModule, setActiveModule, profile } = useAppData();
+  const { activeModule, setActiveModule, profile, resetToSetupDemo, logout } = useAppData();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const profilePopoverRef = useRef<HTMLDivElement>(null);
 
   const userName = profile?.userName || 'Rohan';
   const initials = getUserInitials(userName);
+
+  useEffect(() => {
+    if (!isProfileMenuOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        profilePopoverRef.current &&
+        !profilePopoverRef.current.contains(event.target as Node)
+      ) {
+        setIsProfileMenuOpen(false);
+      }
+    };
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsProfileMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isProfileMenuOpen]);
 
   const navItems: {
     id: LifeOsModule;
@@ -60,6 +87,19 @@ export const LeftModuleSidebar: React.FC = () => {
   const handleSelectModule = (moduleId: LifeOsModule) => {
     setActiveModule(moduleId);
     setIsExpanded(false);
+    setIsProfileMenuOpen(false);
+  };
+
+  const handleRerunSetup = async () => {
+    setIsProfileMenuOpen(false);
+    setIsExpanded(false);
+    await resetToSetupDemo();
+  };
+
+  const handleLogout = async () => {
+    setIsProfileMenuOpen(false);
+    setIsExpanded(false);
+    await logout();
   };
 
   return (
@@ -80,28 +120,78 @@ export const LeftModuleSidebar: React.FC = () => {
           isExpanded ? 'w-60 px-3.5 items-stretch' : 'w-16 px-2 items-center'
         }`}
       >
-        {/* 1. Top Item: Account Initials Avatar with Active Dot */}
-        <div
-          className={`flex items-center gap-3 w-full mb-3 ${
-            isExpanded ? 'px-1.5 justify-start' : 'justify-center'
-          }`}
-          title={`${userName}'s Workspace`}
-        >
-          <div className="relative w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-600 via-violet-600 to-purple-500 text-white flex items-center justify-center font-extrabold text-sm tracking-tight shadow-sm ring-2 ring-indigo-500/20 dark:ring-indigo-400/25 shrink-0">
-            <span>{initials}</span>
-            <span
-              className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#1C1E26]"
-              aria-label="Active workspace status"
-            />
-          </div>
-          {isExpanded && (
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-extrabold text-slate-900 dark:text-white truncate">
-                {userName}
-              </p>
-              <p className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 truncate">
-                Active Workspace
-              </p>
+        {/* 1. Top Item: Clickable Account Initials Avatar with Workspace Popover */}
+        <div ref={profilePopoverRef} className="relative w-full mb-3">
+          <button
+            type="button"
+            onClick={() => setIsProfileMenuOpen((prev) => !prev)}
+            aria-label="Workspace profile menu"
+            aria-haspopup="menu"
+            aria-expanded={isProfileMenuOpen}
+            title={`${userName}'s Workspace`}
+            className={`flex items-center gap-3 w-full rounded-2xl p-1 transition-colors hover:bg-slate-200/50 dark:hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer ${
+              isExpanded ? 'px-1.5 justify-start' : 'justify-center'
+            }`}
+          >
+            <div className="relative w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-600 via-violet-600 to-purple-500 text-white flex items-center justify-center font-extrabold text-sm tracking-tight shadow-sm ring-2 ring-indigo-500/20 dark:ring-indigo-400/25 shrink-0">
+              <span>{initials}</span>
+              <span
+                className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#1C1E26]"
+                aria-label="Active workspace status"
+              />
+            </div>
+            {isExpanded && (
+              <div className="min-w-0 flex-1 text-left">
+                <p className="text-xs font-extrabold text-slate-900 dark:text-white truncate">
+                  {userName}
+                </p>
+                <p className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 truncate">
+                  Active Workspace
+                </p>
+              </div>
+            )}
+          </button>
+
+          {isProfileMenuOpen && (
+            <div
+              role="menu"
+              aria-label="Workspace profile options"
+              className="absolute left-full top-0 ml-3 w-64 p-3 rounded-2xl bg-white dark:bg-[#1C1E26] border border-slate-200 dark:border-white/10 shadow-2xl z-50"
+            >
+              <div className="flex items-center gap-2.5 pb-2.5 mb-2.5 border-b border-slate-100 dark:border-white/10">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-600 via-violet-600 to-purple-500 text-white flex items-center justify-center font-extrabold text-xs shrink-0">
+                  {initials}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-extrabold text-slate-900 dark:text-white truncate">
+                    {userName}&apos;s Workspace
+                  </p>
+                  <p className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                    Active Workspace
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={handleRerunSetup}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors cursor-pointer text-left"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 shrink-0" />
+                  <span>Edit Workspace Profile</span>
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer text-left"
+                >
+                  <LogOut className="w-3.5 h-3.5 shrink-0" />
+                  <span>Log Out</span>
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -164,6 +254,8 @@ export const LeftModuleSidebar: React.FC = () => {
         </nav>
 
         <div className="w-full h-[1px] bg-slate-200/80 dark:bg-white/10 my-1.5" />
+
+       
 
         {/* 4. Bottom Expand / Collapse Toggle (>>) */}
         <button

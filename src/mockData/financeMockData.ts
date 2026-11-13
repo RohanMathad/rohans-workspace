@@ -106,6 +106,32 @@ export const initialCategories: Category[] = [
     monthlyLimit: 4000,
     description: 'Grooming, skincare, health supplements',
   },
+  {
+    id: 'cat-salary',
+    name: 'Salary / Stipend',
+    emoji: '💰',
+    iconName: 'Wallet',
+    color: '#168B53',
+    bgLight: '#E8F8F0',
+    bgDark: '#162822',
+    textLight: '#168B53',
+    textDark: '#3DDC84',
+    type: 'INCOME',
+    description: 'Monthly salary, stipend, and primary paycheck',
+  },
+  {
+    id: 'cat-investments',
+    name: 'Investments / Side Income',
+    emoji: '📈',
+    iconName: 'TrendingUp',
+    color: '#0EA5E9',
+    bgLight: '#E0F2FE',
+    bgDark: '#102636',
+    textLight: '#0284C7',
+    textDark: '#38BDF8',
+    type: 'INCOME',
+    description: 'Dividends, interest, freelance payouts, and side income',
+  },
 ];
 
 import { buildAllSummaryTables, getRelativeDate } from '../services/financeLogic';
