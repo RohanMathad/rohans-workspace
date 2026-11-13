@@ -515,4 +515,18 @@ export function buildAllSummaryTables(
   return { monthlySummaries, yearlySummaries };
 }
 
+/**
+ * Derives 1-2 uppercase initials from a user's display name (e.g., "Rohan Mathad" -> "RM", "Rohan" -> "R")
+ */
+export function getUserInitials(name?: string | null): string {
+  const trimmed = (name || '').trim();
+  if (!trimmed) return 'R';
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+  if (parts.length === 1) {
+    return parts[0].charAt(0).toUpperCase();
+  }
+  return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase();
+}
+
+
 

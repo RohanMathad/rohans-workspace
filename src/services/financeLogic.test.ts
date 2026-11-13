@@ -18,6 +18,7 @@ import {
   buildYearlySummary,
   buildAllSummaryTables,
   buildCategoryBreakdownFromTotals,
+  getUserInitials,
 } from './financeLogic';
 import { financeDataService } from './financeDataService';
 import { Category, LedgerEntry, UserSetupProfile } from '../types/finance.types';
@@ -327,5 +328,14 @@ test('financeDataService auto-syncs MonthlySummary and YearlySummary on add, edi
 
   await financeDataService.resetAllData();
 });
+
+test('getUserInitials derives 1-2 uppercase initials from user name', () => {
+  assert.equal(getUserInitials('Rohan'), 'R');
+  assert.equal(getUserInitials('Rohan Mathad'), 'RM');
+  assert.equal(getUserInitials('rohan a. mathad'), 'RM');
+  assert.equal(getUserInitials(''), 'R');
+  assert.equal(getUserInitials(undefined), 'R');
+});
+
 
 
